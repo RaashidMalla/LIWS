@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LIWS — Local Internet Web Server</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">L</div>
+        <div>
+          <div class="brand-title">LIWS</div>
+          <div class="brand-sub">Local Web Server</div>
+        </div>
+      </div>
+      <nav>
+        <button class="nav-item active" data-page="services">Services</button>
+        <button class="nav-item"        data-page="databases">Databases</button>
+        <button class="nav-item"        data-page="query">SQL Query</button>
+        <button class="nav-item"        data-page="laravel">Laravel</button>
+        <button class="nav-item"        data-page="settings">Settings</button>
+      </nav>
+      <div class="sidebar-footer">v1.0</div>
+    </aside>
+
+    <main class="content">
+      <!-- SERVICES -->
+      <section class="page active" id="page-services">
+        <header class="page-head">
+          <h1>Services</h1>
+          <p class="muted">Start and stop MySQL and Apache. Shutdown is always safe.</p>
+        </header>
+
+        <div class="cards">
+          <div class="card service-card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">MySQL</div>
+                <div class="muted small">Port 3306 · InnoDB</div>
+              </div>
+              <span class="pill pill-stopped" id="mysql-pill">Stopped</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-primary" id="btn-start-mysql">Start</button>
+              <button class="btn"             id="btn-stop-mysql">Stop</button>
+            </div>
+          </div>
+
+          <div class="card service-card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Apache</div>
+                <div class="muted small">Port 80 · 443</div>
+              </div>
+              <span class="pill pill-stopped" id="apache-pill">Stopped</span>
+            </div>
+            <div class="card-actions">
+              <button class="btn btn-primary" id="btn-start-apache">Start</button>
+              <button class="btn"             id="btn-stop-apache">Stop</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="card-head">
+            <div class="card-title">Live Log</div>
+            <button class="btn btn-ghost" id="btn-clear-log">Clear</button>
+          </div>
+          <pre class="log" id="log"></pre>
+        </div>
+      </section>
+
+      <!-- DATABASES -->
+      <section class="page" id="page-databases">
+        <header class="page-head">
+          <h1>Databases</h1>
+          <p class="muted">Manage MySQL databases and tables.</p>
+        </header>
+
+        <div class="toolbar">
+          <button class="btn btn-primary" id="btn-load-dbs">Load Databases</button>
+          <input  class="input" id="new-db-name" placeholder="new database name" />
+          <button class="btn"  id="btn-create-db">+ Create</button>
+          <span class="muted" id="db-status"></span>
+        </div>
+
+        <div class="card">
+          <table class="table" id="db-table">
+            <thead><tr><th>Database</th><th class="t-right">Actions</th></tr></thead>
+            <tbody><tr><td colspan="2" class="muted center">Click "Load Databases" to begin.</td></tr></tbody>
+          </table>
+        </div>
+
+        <div id="tables-section" class="card hidden">
+          <div class="card-head">
+            <div class="card-title">Tables in <span id="active-db"></span></div>
+            <button class="btn btn-ghost" id="btn-back-dbs">Back</button>
+          </div>
+          <table class="table" id="tables-table">
+            <thead><tr><th>Table</th><th>Rows</th><th class="t-right">Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <div id="rows-section" class="card hidden">
+          <div class="card-head">
+            <div class="card-title">Rows in <span id="active-table"></span></div>
+            <button class="btn btn-ghost" id="btn-back-tables">Back</button>
+          </div>
+          <div class="scroll-x">
+            <table class="table" id="rows-table">
+              <thead></thead><tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- QUERY -->
+      <section class="page" id="page-query">
+        <header class="page-head">
+          <h1>SQL Query</h1>
+          <p class="muted">Run any SQL statement against MySQL.</p>
+        </header>
+
+        <div class="toolbar">
+          <select class="input" id="query-db"><option value="">— select database —</option></select>
+          <button class="btn"   id="btn-refresh-dbs">Refresh DB list</button>
+          <button class="btn btn-primary" id="btn-run-query">Run Query</button>
+        </div>
+
+        <div class="card">
+          <textarea class="sql" id="sql-input" placeholder="SELECT * FROM users LIMIT 50;"></textarea>
+        </div>
+
+        <div class="card" id="query-result-card">
+          <div class="muted center" id="query-empty">Results will appear here.</div>
+          <div id="query-error" class="error hidden"></div>
+          <div id="query-success" class="success hidden"></div>
+          <div class="scroll-x">
+            <table class="table hidden" id="result-table">
+              <thead></thead><tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- LARAVEL -->
+      <section class="page" id="page-laravel">
+        <header class="page-head">
+          <h1>Laravel Project Creator</h1>
+          <p class="muted">Runs <code>composer create-project laravel/laravel</code> in your chosen folder.</p>
+        </header>
+
+        <div class="card">
+          <div class="form-row">
+            <label>Project Name</label>
+            <input class="input" id="laravel-name" placeholder="my-app" />
+          </div>
+          <div class="form-row">
+            <label>Location</label>
+            <div class="row-flex">
+              <input class="input grow" id="laravel-path" placeholder="C:\xampp\htdocs" />
+              <button class="btn" id="btn-pick-folder">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-primary" id="btn-create-laravel">Create Project</button>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="card-head">
+            <div class="card-title">Build Log</div>
+            <button class="btn btn-ghost" id="btn-clear-laravel-log">Clear</button>
+          </div>
+          <pre class="log" id="laravel-log"></pre>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="page" id="page-settings">
+        <header class="page-head">
+          <h1>Settings</h1>
+          <p class="muted">Read-only paths used by LIWS.</p>
+        </header>
+        <div class="card">
+          <div class="kv"><span>MySQL binary</span><code>C:\xampp\mysql\bin\mysqld.exe</code></div>
+          <div class="kv"><span>MySQL config</span><code>C:\xampp\mysql\bin\my.ini</code></div>
+          <div class="kv"><span>mysqladmin</span><code>C:\xampp\mysql\bin\mysqladmin.exe</code></div>
+          <div class="kv"><span>Apache binary</span><code>C:\xampp\apache\bin\httpd.exe</code></div>
+          <div class="kv"><span>Apache config</span><code>C:\xampp\apache\conf\httpd.conf</code></div>
+          <div class="kv"><span>MySQL user</span><code>root</code> (no password)</div>
+        </div>
+        <div class="card">
+          <div class="card-title">About</div>
+          <p class="muted">
+            LIWS shuts MySQL down with <code>mysqladmin shutdown</code> on every app close —
+            including Windows shutdown — so InnoDB never gets corrupted from a hard kill.
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

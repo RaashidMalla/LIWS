@@ -1,0 +1,40 @@
+{
+  "name": "liws",
+  "version": "1.0.0",
+  "description": "LIWS — Local Internet Web Server. Custom desktop dev environment for XAMPP that prevents InnoDB corruption on unsafe shutdown.",
+  "main": "main.js",
+  "author": "Raashid Malla",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder build --win"
+  },
+  "dependencies": {
+    "mysql2": "^3.9.0"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.raashidmalla.liws",
+    "productName": "LIWS",
+    "files": [
+      "main.js",
+      "renderer.js",
+      "db-manager.js",
+      "laravel.js",
+      "index.html",
+      "assets/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}
