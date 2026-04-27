@@ -1,7 +1,7 @@
 {
-  "name": "liws",
+  "name": "lwis",
   "version": "1.0.0",
-  "description": "LIWS — Local Internet Web Server. Custom desktop dev environment for XAMPP that prevents InnoDB corruption on unsafe shutdown.",
+  "description": "LWIS — Local Web Server. Custom desktop dev environment for XAMPP that prevents InnoDB corruption on unsafe shutdown.",
   "main": "main.js",
   "author": "Raashid Malla",
   "license": "MIT",
@@ -17,8 +17,8 @@
     "electron-builder": "^24.0.0"
   },
   "build": {
-    "appId": "com.raashidmalla.liws",
-    "productName": "LIWS",
+    "appId": "com.raashidmalla.lwis",
+    "productName": "LWIS",
     "files": [
       "main.js",
       "renderer.js",

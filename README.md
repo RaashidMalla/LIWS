@@ -1,4 +1,8 @@
-# LIWS — Local Internet Web Server
+# LWIS — Local Web Server
+
+<p align="center">
+  <img src="assets/icon.png" alt="LWIS Logo" width="180" />
+</p>
 
 A custom desktop development environment for **XAMPP** built with Electron + Node.js + MySQL.
 Like XAMPP Control Panel — but with a modern dark UI, a built-in database browser, a SQL query
@@ -7,18 +11,18 @@ When your laptop force-closes or loses power.
 
 ---
 
-## Why LIWS?
+## Why LWIS?
 
 XAMPP is great until the day you slam your laptop shut and MySQL refuses to start. The InnoDB
 log files get corrupted because XAMPP kills MySQL with `taskkill /F` instead of asking it to
 shut down cleanly. The "fix" is usually deleting `ib_logfile0` / `ib_logfile1` (risky) or
 reinstalling XAMPP (annoying).
 
-**LIWS solves this by always shutting MySQL down with `mysqladmin shutdown`** — including when
+**LWIS solves this by always shutting MySQL down with `mysqladmin shutdown`** — including when
 Windows itself shuts down. That tells MySQL to flush all writes, mark the log clean, and close
 properly. No more corruption.
 
-| Feature                      | XAMPP                    | LIWS                          |
+| Feature                      | XAMPP                    | LWIS                          |
 | ---------------------------- | ------------------------ | ----------------------------- |
 | Safe shutdown on close       | No — corrupts often      | Yes — always safe             |
 | Modern UI                    | Old/dated                | Custom dark UI                |
@@ -106,8 +110,8 @@ LWIS/
 ## Install & Run
 
 ```bash
-git clone https://github.com/RaashidMalla/LIWS.git
-cd LIWS
+git clone https://github.com/RaashidMalla/LWIS.git
+cd LWIS
 npm install
 npm start
 ```
@@ -160,7 +164,7 @@ The safe shutdown is a single `app.on('before-quit', ...)` handler — that's th
 Things planned / in flight (this is a living list):
 
 - [ ] System tray icon — keep services running while the window is closed
-- [ ] Auto-start LIWS on Windows boot
+- [ ] Auto-start LWIS on Windows boot
 - [ ] PHP version switcher (multiple `php.exe` versions)
 - [ ] Hosts file manager — add/remove `myapp.test` entries automatically
 - [ ] Port conflict detector — warn before starting if 3306 / 80 are in use

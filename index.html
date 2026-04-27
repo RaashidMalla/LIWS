@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>LIWS — Local Internet Web Server</title>
+  <title>LWIS — Local Web Server</title>
   <link rel="stylesheet" href="assets/style.css" />
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
       <div class="brand">
-        <div class="brand-mark">L</div>
+        <img class="brand-logo" src="assets/icon.png" alt="LWIS" onerror="this.style.display='none'" />
         <div>
-          <div class="brand-title">LIWS</div>
+          <div class="brand-title">LWIS</div>
           <div class="brand-sub">Local Web Server</div>
         </div>
       </div>
@@ -183,7 +183,7 @@
       <section class="page" id="page-settings">
         <header class="page-head">
           <h1>Settings</h1>
-          <p class="muted">Read-only paths used by LIWS.</p>
+          <p class="muted">Read-only paths used by LWIS.</p>
         </header>
         <div class="card">
           <div class="kv"><span>MySQL binary</span><code>C:\xampp\mysql\bin\mysqld.exe</code></div>
@@ -196,7 +196,7 @@
         <div class="card">
           <div class="card-title">About</div>
           <p class="muted">
-            LIWS shuts MySQL down with <code>mysqladmin shutdown</code> on every app close —
+            LWIS shuts MySQL down with <code>mysqladmin shutdown</code> on every app close —
             including Windows shutdown — so InnoDB never gets corrupted from a hard kill.
           </p>
         </div>
