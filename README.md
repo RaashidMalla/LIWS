@@ -3,7 +3,7 @@
 A custom desktop development environment for **XAMPP** built with Electron + Node.js + MySQL.
 Like XAMPP Control Panel — but with a modern dark UI, a built-in database browser, a SQL query
 runner, a Laravel project creator, and **safe MySQL shutdown that prevents InnoDB corruption**
-when your laptop force-closes or loses power.
+When your laptop force-closes or loses power.
 
 ---
 
@@ -52,9 +52,9 @@ properly. No more corruption.
 ### SQL Query Runner
 - Free-form SQL textarea
 - Per-query database selector
-- Auto-renders result tables for `SELECT`
-- Shows affected-rows for `INSERT` / `UPDATE` / `DELETE`
-- Red error panel for syntax / permission errors
+- Auto-renders result tables for `SELECT.`
+- Shows affected-rows for `INSERT` / `UPDATE` / `DELETE.`
+- Red error panel for syntax/permission errors
 
 ### Laravel Project Creator
 - Pick name + folder (with native folder picker)
@@ -159,12 +159,12 @@ The safe shutdown is a single `app.on('before-quit', ...)` handler — that's th
 
 Things planned / in flight (this is a living list):
 
-- [ ] System tray icon — keep services running while window is closed
+- [ ] System tray icon — keep services running while the window is closed
 - [ ] Auto-start LIWS on Windows boot
 - [ ] PHP version switcher (multiple `php.exe` versions)
 - [ ] Hosts file manager — add/remove `myapp.test` entries automatically
 - [ ] Port conflict detector — warn before starting if 3306 / 80 are in use
-- [ ] Database import / export (`.sql` dump support)
+- [ ] Database import/export (`.sql` dump support)
 - [ ] Project list — scan `C:\xampp\htdocs` and show open-in-browser / open-in-VSCode buttons
 - [ ] Light / dark theme toggle
 - [ ] Settings page — editable paths, ports, MySQL credentials
@@ -175,6 +175,4 @@ Things planned / in flight (this is a living list):
 
 ---
 
-## License
 
-MIT
