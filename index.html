@@ -183,22 +183,109 @@
       <section class="page" id="page-settings">
         <header class="page-head">
           <h1>Settings</h1>
-          <p class="muted">Read-only paths used by LWIS.</p>
+          <p class="muted">All paths and credentials used by LWIS. Changes save instantly.</p>
         </header>
+
         <div class="card">
-          <div class="kv"><span>MySQL binary</span><code>C:\xampp\mysql\bin\mysqld.exe</code></div>
-          <div class="kv"><span>MySQL config</span><code>C:\xampp\mysql\bin\my.ini</code></div>
-          <div class="kv"><span>mysqladmin</span><code>C:\xampp\mysql\bin\mysqladmin.exe</code></div>
-          <div class="kv"><span>Apache binary</span><code>C:\xampp\apache\bin\httpd.exe</code></div>
-          <div class="kv"><span>Apache config</span><code>C:\xampp\apache\conf\httpd.conf</code></div>
-          <div class="kv"><span>MySQL user</span><code>root</code> (no password)</div>
+          <div class="card-title">Appearance</div>
+          <div class="form-row">
+            <label>Theme</label>
+            <select class="input" id="setting-theme">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
         </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">XAMPP Paths</div>
+            <button class="btn btn-ghost btn-small" id="btn-detect-xampp">Auto-detect XAMPP root</button>
+          </div>
+          <div class="form-row">
+            <label>XAMPP root</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-xamppRoot" placeholder="C:\xampp" />
+              <button class="btn" data-pick="xamppRoot" data-pick-type="folder">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>MySQL binary (mysqld.exe)</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-mysqlPath" />
+              <button class="btn" data-pick="mysqlPath" data-pick-type="file">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>MySQL config (my.ini)</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-mysqlIni" />
+              <button class="btn" data-pick="mysqlIni" data-pick-type="file">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>mysqladmin (mysqladmin.exe)</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-mysqladminPath" />
+              <button class="btn" data-pick="mysqladminPath" data-pick-type="file">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Apache binary (httpd.exe)</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-apachePath" />
+              <button class="btn" data-pick="apachePath" data-pick-type="file">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>Apache config (httpd.conf)</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-apacheConf" />
+              <button class="btn" data-pick="apacheConf" data-pick-type="file">Browse…</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>htdocs root</label>
+            <div class="row-flex">
+              <input class="input grow" id="setting-htdocsPath" />
+              <button class="btn" data-pick="htdocsPath" data-pick-type="folder">Browse…</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">MySQL Credentials</div>
+          <div class="form-row">
+            <label>Host</label>
+            <input class="input" id="setting-mysqlHost" />
+          </div>
+          <div class="form-row">
+            <label>Port</label>
+            <input class="input" id="setting-mysqlPort" type="number" min="1" max="65535" />
+          </div>
+          <div class="form-row">
+            <label>User</label>
+            <input class="input" id="setting-mysqlUser" />
+          </div>
+          <div class="form-row">
+            <label>Password</label>
+            <input class="input" id="setting-mysqlPassword" type="password" placeholder="(empty)" />
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="btn btn-primary" id="btn-save-settings">Save Settings</button>
+          <button class="btn btn-danger"  id="btn-reset-settings">Reset to Defaults</button>
+          <span class="muted" id="settings-status"></span>
+        </div>
+
         <div class="card">
           <div class="card-title">About</div>
           <p class="muted">
             LWIS shuts MySQL down with <code>mysqladmin shutdown</code> on every app close —
             including Windows shutdown — so InnoDB never gets corrupted from a hard kill.
           </p>
+          <div class="kv"><span>Config file</span><code id="config-path">…</code></div>
         </div>
       </section>
     </main>

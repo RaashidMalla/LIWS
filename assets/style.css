@@ -248,3 +248,29 @@ code {
 ::-webkit-scrollbar-track   { background: var(--bg-2); }
 ::-webkit-scrollbar-thumb   { background: var(--border); border-radius: 5px; }
 ::-webkit-scrollbar-thumb:hover { background: #2f4068; }
+
+body.theme-light {
+  --bg:        #f6f8fb;
+  --bg-2:      #ffffff;
+  --panel:     #ffffff;
+  --panel-2:   #f1f5f9;
+  --border:    #e2e8f0;
+  --text:      #0f172a;
+  --muted:     #64748b;
+  --primary:   #2563eb;
+  --primary-2: #1d4ed8;
+}
+
+body.theme-light .table th     { background: #f8fafc; }
+body.theme-light .pill-running { background: rgba(34,197,94,0.18);  color: #166534; }
+body.theme-light .pill-stopped { background: rgba(239,68,68,0.18);  color: #991b1b; }
+body.theme-light .btn          { background: #f1f5f9; border-color: #e2e8f0; color: #0f172a; }
+body.theme-light .btn:hover    { background: #e2e8f0; border-color: #cbd5e1; }
+body.theme-light .btn-primary  { background: var(--primary); border-color: var(--primary); color: white; }
+body.theme-light .btn-primary:hover { background: var(--primary-2); border-color: var(--primary-2); }
+body.theme-light .btn-ghost    { background: transparent; border-color: transparent; color: var(--muted); }
+body.theme-light .btn-ghost:hover { background: #f1f5f9; color: var(--text); }
+body.theme-light .nav-item.active { color: white; }
+body.theme-light ::-webkit-scrollbar-thumb       { background: #cbd5e1; }
+body.theme-light ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+body.theme-light .brand-logo   { background: #fffceb; }

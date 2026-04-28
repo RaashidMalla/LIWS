@@ -337,5 +337,112 @@ $('#btn-create-laravel').addEventListener('click', async () => {
   else           appendLog('#laravel-log', `\nFailed — ${r.msg}`);
 });
 
+const SETTING_FIELDS = {
+  'setting-xamppRoot':      'paths.xamppRoot',
+  'setting-mysqlPath':      'paths.mysqlPath',
+  'setting-mysqlIni':       'paths.mysqlIni',
+  'setting-mysqladminPath': 'paths.mysqladminPath',
+  'setting-apachePath':     'paths.apachePath',
+  'setting-apacheConf':     'paths.apacheConf',
+  'setting-htdocsPath':     'paths.htdocsPath',
+  'setting-mysqlHost':      'mysql.host',
+  'setting-mysqlPort':      'mysql.port',
+  'setting-mysqlUser':      'mysql.user',
+  'setting-mysqlPassword':  'mysql.password',
+  'setting-theme':          'ui.theme'
+};
+
+function getByPath(obj, p) { return p.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj); }
+function setByPath(obj, p, value) {
+  const keys = p.split('.');
+  let t = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!t[keys[i]] || typeof t[keys[i]] !== 'object') t[keys[i]] = {};
+    t = t[keys[i]];
+  }
+  t[keys[keys.length - 1]] = value;
+}
+
+function applyTheme(theme) {
+  document.body.classList.toggle('theme-light', theme === 'light');
+  document.body.classList.toggle('theme-dark',  theme !== 'light');
+}
+
+function flashStatus(msg, kind) {
+  const el = $('#settings-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = kind === 'error' ? 'var(--red)' : 'var(--green)';
+  setTimeout(() => { el.textContent = ''; el.style.color = ''; }, 2500);
+}
+
+async function loadSettingsForm() {
+  const s = await ipcRenderer.invoke('settings-get');
+  for (const [id, p] of Object.entries(SETTING_FIELDS)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    const v = getByPath(s, p);
+    el.value = v == null ? '' : v;
+  }
+  const cp = await ipcRenderer.invoke('settings-path');
+  const cpEl = document.getElementById('config-path');
+  if (cpEl) cpEl.textContent = cp;
+  applyTheme(s.ui && s.ui.theme);
+}
+
+function readSettingsForm() {
+  const out = {};
+  for (const [id, p] of Object.entries(SETTING_FIELDS)) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    let v = el.value;
+    if (id === 'setting-mysqlPort') v = parseInt(v, 10) || 3306;
+    setByPath(out, p, v);
+  }
+  return out;
+}
+
+async function saveSettings() {
+  const obj = readSettingsForm();
+  await ipcRenderer.invoke('settings-save', obj);
+  applyTheme(obj.ui && obj.ui.theme);
+  flashStatus('Settings saved');
+  await ipcRenderer.invoke('db-connect');
+}
+
+async function resetSettings() {
+  if (!confirm('Reset all settings to defaults? This re-detects XAMPP and clears your MySQL credentials.')) return;
+  await ipcRenderer.invoke('settings-reset');
+  await loadSettingsForm();
+  flashStatus('Settings reset to defaults');
+}
+
+$('#btn-save-settings') && $('#btn-save-settings').addEventListener('click', saveSettings);
+$('#btn-reset-settings') && $('#btn-reset-settings').addEventListener('click', resetSettings);
+
+$('#setting-theme') && $('#setting-theme').addEventListener('change', e => applyTheme(e.target.value));
+
+$('#btn-detect-xampp') && $('#btn-detect-xampp').addEventListener('click', async () => {
+  await ipcRenderer.invoke('settings-reset');
+  await loadSettingsForm();
+  flashStatus('Auto-detected XAMPP root');
+});
+
+document.querySelectorAll('[data-pick]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const fieldId = `setting-${btn.dataset.pick}`;
+    const input = document.getElementById(fieldId);
+    if (!input) return;
+    const channel = btn.dataset.pickType === 'file' ? 'pick-file' : 'pick-folder';
+    const filters = btn.dataset.pickType === 'file' ? [{ name: 'Executable / Config', extensions: ['exe', 'ini', 'conf'] }] : null;
+    const picked = await ipcRenderer.invoke(channel, input.value || undefined, filters);
+    if (picked) input.value = picked;
+  });
+});
+
+(async () => {
+  try { await loadSettingsForm(); } catch (_) {}
+})();
+
 refreshStatus();
 setInterval(refreshStatus, 5000);

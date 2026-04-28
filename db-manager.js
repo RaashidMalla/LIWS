@@ -1,22 +1,32 @@
-const mysql = require('mysql2/promise');
+const mysql    = require('mysql2/promise');
+const settings = require('./settings');
 
 let connection = null;
+
+function disconnect() {
+  if (connection) {
+    try { connection.end(); } catch (_) {}
+    connection = null;
+  }
+}
 
 async function connectDB() {
   if (connection) {
     try { await connection.ping(); return { success: true }; }
-    catch (_) { connection = null; }
+    catch (_) { disconnect(); }
   }
   try {
+    const cfg = settings.get('mysql') || {};
     connection = await mysql.createConnection({
-      host: '127.0.0.1',
-      port: 3306,
-      user: 'root',
-      password: '',
+      host:     cfg.host     || '127.0.0.1',
+      port:     cfg.port     || 3306,
+      user:     cfg.user     || 'root',
+      password: cfg.password || '',
       multipleStatements: false
     });
     return { success: true };
   } catch (e) {
+    connection = null;
     return { success: false, msg: e.message };
   }
 }
@@ -121,6 +131,7 @@ async function deleteRow(dbName, table, id) {
 
 module.exports = {
   connectDB,
+  disconnect,
   listDatabases,
   listTables,
   createDatabase,

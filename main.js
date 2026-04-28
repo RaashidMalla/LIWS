@@ -1,34 +1,38 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const { exec, spawn } = require('child_process');
 const path = require('path');
+const settings = require('./settings');
 const db = require('./db-manager');
 const { createLaravelProject } = require('./laravel');
-
-const MYSQL_PATH       = 'C:\\xampp\\mysql\\bin\\mysqld.exe';
-const MYSQL_INI        = 'C:\\xampp\\mysql\\bin\\my.ini';
-const MYSQLADMIN_PATH  = 'C:\\xampp\\mysql\\bin\\mysqladmin.exe';
-const APACHE_PATH      = 'C:\\xampp\\apache\\bin\\httpd.exe';
-const APACHE_CONF      = 'C:\\xampp\\apache\\conf\\httpd.conf';
 
 let mainWindow = null;
 let mysqlProc  = null;
 let apacheProc = null;
 
 function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 780,
-    minWidth: 980,
-    minHeight: 620,
+  const w = settings.get('ui.window') || {};
+  const opts = {
+    width:    w.width  || 1200,
+    height:   w.height || 780,
+    minWidth: 980, minHeight: 620,
     backgroundColor: '#0f172a',
     icon: path.join(__dirname, 'assets', 'icon.png'),
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  });
+    webPreferences: { nodeIntegration: true, contextIsolation: false }
+  };
+  if (Number.isFinite(w.x)) opts.x = w.x;
+  if (Number.isFinite(w.y)) opts.y = w.y;
+
+  mainWindow = new BrowserWindow(opts);
   mainWindow.setMenuBarVisibility(false);
   mainWindow.loadFile('index.html');
+
+  const saveBounds = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    if (mainWindow.isMinimized() || mainWindow.isMaximized()) return;
+    settings.set('ui.window', mainWindow.getBounds());
+  };
+  mainWindow.on('resized', saveBounds);
+  mainWindow.on('moved',   saveBounds);
 }
 
 function sendLog(msg) {
@@ -46,14 +50,19 @@ function isProcessRunning(imageName) {
   });
 }
 
+function mysqladminCmd(action) {
+  const bin  = settings.get('paths.mysqladminPath');
+  const user = settings.get('mysql.user') || 'root';
+  const pass = settings.get('mysql.password') || '';
+  const passArg = pass ? ` -p"${pass.replace(/"/g, '\\"')}"` : '';
+  return `"${bin}" -u ${user}${passArg} ${action}`;
+}
+
 ipcMain.handle('start-mysql', () => new Promise(resolve => {
-  if (mysqlProc) {
-    return resolve({ success: true, msg: 'MySQL already running' });
-  }
+  if (mysqlProc) return resolve({ success: true, msg: 'MySQL already running' });
+  const p = settings.get('paths');
   try {
-    mysqlProc = spawn(MYSQL_PATH, [`--defaults-file=${MYSQL_INI}`, '--console'], {
-      windowsHide: true
-    });
+    mysqlProc = spawn(p.mysqlPath, [`--defaults-file=${p.mysqlIni}`, '--console'], { windowsHide: true });
     mysqlProc.stdout.on('data', d => sendLog(`[mysql] ${d.toString().trim()}`));
     mysqlProc.stderr.on('data', d => sendLog(`[mysql] ${d.toString().trim()}`));
     mysqlProc.on('error', err => {
@@ -72,7 +81,7 @@ ipcMain.handle('start-mysql', () => new Promise(resolve => {
 }));
 
 ipcMain.handle('stop-mysql', () => new Promise(resolve => {
-  exec(`"${MYSQLADMIN_PATH}" -u root shutdown`, (err, stdout, stderr) => {
+  exec(mysqladminCmd('shutdown'), (err, _stdout, stderr) => {
     if (err) {
       sendLog(`[mysql] safe shutdown failed: ${stderr || err.message}`);
       return resolve({ success: false, msg: stderr || err.message });
@@ -84,11 +93,10 @@ ipcMain.handle('stop-mysql', () => new Promise(resolve => {
 }));
 
 ipcMain.handle('start-apache', () => new Promise(resolve => {
-  if (apacheProc) {
-    return resolve({ success: true, msg: 'Apache already running' });
-  }
+  if (apacheProc) return resolve({ success: true, msg: 'Apache already running' });
+  const p = settings.get('paths');
   try {
-    apacheProc = spawn(APACHE_PATH, ['-f', APACHE_CONF], { windowsHide: true });
+    apacheProc = spawn(p.apachePath, ['-f', p.apacheConf], { windowsHide: true });
     apacheProc.stdout.on('data', d => sendLog(`[apache] ${d.toString().trim()}`));
     apacheProc.stderr.on('data', d => sendLog(`[apache] ${d.toString().trim()}`));
     apacheProc.on('error', err => {
@@ -123,6 +131,11 @@ ipcMain.handle('status-services', async () => ({
   apache: await isProcessRunning('httpd.exe')
 }));
 
+ipcMain.handle('settings-get',    ()         => settings.load());
+ipcMain.handle('settings-save',   (_e, obj)  => settings.setAll(obj));
+ipcMain.handle('settings-reset',  ()         => settings.reset());
+ipcMain.handle('settings-path',   ()         => settings.configFilePath());
+
 ipcMain.handle('db-connect',         ()                  => db.connectDB());
 ipcMain.handle('db-list',            ()                  => db.listDatabases());
 ipcMain.handle('db-tables',          (e, name)           => db.listTables(name));
@@ -137,22 +150,30 @@ ipcMain.handle('laravel-create', (e, name, location) =>
   createLaravelProject(name, location, msg => sendLog(`[laravel] ${msg}`))
 );
 
-ipcMain.handle('pick-folder', async () => {
+ipcMain.handle('pick-folder', async (_e, defaultPath) => {
   const res = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory', 'createDirectory'],
-    title: 'Choose folder'
+    title: 'Choose folder',
+    defaultPath
+  });
+  if (res.canceled || res.filePaths.length === 0) return null;
+  return res.filePaths[0];
+});
+
+ipcMain.handle('pick-file', async (_e, defaultPath, filters) => {
+  const res = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    title: 'Choose file',
+    defaultPath,
+    filters: filters || []
   });
   if (res.canceled || res.filePaths.length === 0) return null;
   return res.filePaths[0];
 });
 
 app.on('before-quit', () => {
-  try {
-    exec(`"${MYSQLADMIN_PATH}" -u root shutdown`);
-  } catch (_) {}
-  try {
-    exec('taskkill /F /IM httpd.exe');
-  } catch (_) {}
+  try { exec(mysqladminCmd('shutdown')); } catch (_) {}
+  try { exec('taskkill /F /IM httpd.exe'); } catch (_) {}
 });
 
 app.on('window-all-closed', () => {

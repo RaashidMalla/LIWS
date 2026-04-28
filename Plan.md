@@ -36,6 +36,9 @@ LWIS is the **single desktop app** a Windows web developer opens in the morning.
 - [x] Settings page (read-only paths)
 - [x] Branded LWIS, GitHub repo live
 
+## Current State — v0.2 (DONE)
+- [x] Phase 2 — Settings & Persistence (editable paths, credentials, theme, window-bounds, auto-detect)
+
 ---
 
 ## Architecture & Dependencies to Add
@@ -79,31 +82,35 @@ Each phase ships independently. Goal: every phase ends with a usable, testable f
 
 ---
 
-## Phase 2 — Settings & Persistence (1 day)
+## Phase 2 — Settings & Persistence (DONE)
 
 **Goal:** every path, port, credential, and theme choice is editable and persists across restarts.
 
 ### Features
-- [ ] Settings page becomes editable (XAMPP paths, MySQL user/pass, ports, theme)
-- [ ] Settings stored in `%APPDATA%/lwis/config.json` via `electron-store`
-- [ ] Window size + position remembered
-- [ ] Theme toggle (dark / light)
-- [ ] "Reset to defaults" button
-- [ ] First-run wizard: detect XAMPP install location, confirm paths
+- [x] Settings page becomes editable (XAMPP paths, MySQL user/pass, ports, theme)
+- [x] Settings stored in `%APPDATA%/lwis/config.json` via custom JSON-store
+- [x] Window size + position remembered
+- [x] Theme toggle (dark / light)
+- [x] "Reset to defaults" button
+- [x] Auto-detect XAMPP install location on first run (and via button)
+- [x] File / folder pickers next to every path field
+- [x] MySQL credentials propagate to `mysqladmin shutdown` and `mysql2` connection
 
 ### Files
-- `settings.js` (new) — wraps `electron-store`
-- `main.js` — replace hardcoded constants with `settings.get(...)`
-- `index.html`, `renderer.js` — settings page form, theme switcher
+- `settings.js` (new) — JSON-backed store, deep-merge, auto-detect XAMPP root
+- `main.js` — replaced hardcoded constants with `settings.get(...)`, window-bounds persistence, settings IPC handlers, file/folder picker IPC
+- `db-manager.js` — reads MySQL creds from settings each connect
+- `index.html`, `renderer.js` — settings form + light theme + pickers
 - `assets/style.css` — light theme variables
 
 ### Dependencies
-- `electron-store`
+- (none — used built-in `fs` rather than `electron-store` to avoid ESM friction)
 
 ### Acceptance
-- Change MySQL path → restart app → still works
-- Toggle light theme → reload → stays light
-- Delete `config.json` → app boots with defaults, runs first-run wizard
+- [x] Change MySQL path → restart app → still works (paths are read fresh from settings on each spawn)
+- [x] Toggle light theme → reload → stays light
+- [x] Delete `config.json` → app boots with re-detected XAMPP defaults
+- [x] Window position remembered between sessions
 
 ---
 
