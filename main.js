@@ -5,7 +5,7 @@ const settings = require('./settings');
 const db = require('./db-manager');
 const { createLaravelProject } = require('./laravel');
 const stats = require('./system-stats');
-const { scanProjects, recentProjects } = require('./project-scanner');
+const { scanProjects, recentProjects, getProjectInfo } = require('./project-scanner');
 
 let mainWindow = null;
 let mysqlProc  = null;
@@ -143,9 +143,40 @@ ipcMain.handle('system-info',     ()         => stats.getSystemInfo());
 
 ipcMain.handle('projects-recent', (_e, n)    => recentProjects(settings.get('paths.htdocsPath'), n || 5));
 ipcMain.handle('projects-all',    ()         => scanProjects(settings.get('paths.htdocsPath')));
+ipcMain.handle('project-info',    (_e, p)    => getProjectInfo(p));
+
+ipcMain.handle('project-favorites',         () => settings.get('ui.favorites') || []);
+ipcMain.handle('project-favorite-toggle',   (_e, name) => {
+  const favs = settings.get('ui.favorites') || [];
+  const idx  = favs.indexOf(name);
+  if (idx >= 0) favs.splice(idx, 1); else favs.push(name);
+  settings.set('ui.favorites', favs);
+  return favs;
+});
 
 ipcMain.handle('open-url',  (_e, url) => shell.openExternal(url));
 ipcMain.handle('open-path', (_e, p)   => shell.openPath(p));
+
+ipcMain.handle('terminal-open', (_e, p) => new Promise(resolve => {
+  const wt = spawn('wt', ['-d', p], { detached: true, stdio: 'ignore' });
+  wt.on('error', () => {
+    spawn('cmd', ['/K', `cd /d "${p}"`], { detached: true, stdio: 'ignore', shell: true }).unref();
+    resolve({ success: true, fallback: 'cmd' });
+  });
+  wt.on('spawn', () => { wt.unref(); resolve({ success: true }); });
+}));
+
+ipcMain.handle('vscode-open', (_e, p) => new Promise(resolve => {
+  const proc = spawn('code', [p], { detached: true, stdio: 'ignore', shell: true });
+  proc.on('error', err => resolve({ success: false, msg: err.message }));
+  proc.on('spawn', () => { proc.unref(); resolve({ success: true }); });
+}));
+
+ipcMain.handle('npm-run', (_e, cwd, script) => new Promise(resolve => {
+  const proc = spawn('cmd', ['/K', `cd /d "${cwd}" && npm run ${script}`], { detached: true, stdio: 'ignore', shell: true });
+  proc.on('error', err => resolve({ success: false, msg: err.message }));
+  proc.on('spawn', () => { proc.unref(); resolve({ success: true }); });
+}));
 
 ipcMain.handle('db-connect',         ()                  => db.connectDB());
 ipcMain.handle('db-list',            ()                  => db.listDatabases());

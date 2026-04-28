@@ -597,6 +597,236 @@ document.querySelectorAll('[data-quick]').forEach(btn => {
   });
 });
 
+// ---------- Projects page ----------
+let allProjects = [];
+let favorites   = [];
+
+const TYPE_ICONS = {
+  Laravel:   '▲',
+  WordPress: 'W',
+  Node:      'N',
+  Composer:  'C',
+  PHP:       'P',
+  Static:    '◇',
+  Folder:    '▦'
+};
+
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escAttr(s) { return escHtml(s); }
+
+function buildProjectCard(p) {
+  const isFav = favorites.includes(p.name);
+  return `
+    <div class="project-card" data-name="${escAttr(p.name)}" data-path="${escAttr(p.path)}">
+      <button class="fav-btn ${isFav ? 'active' : ''}" data-fav="${escAttr(p.name)}" title="${isFav ? 'Unpin' : 'Pin'}">★</button>
+      <div class="project-icon type-${p.type.toLowerCase()}">${TYPE_ICONS[p.type] || '?'}</div>
+      <div class="project-name">${escHtml(p.name)}</div>
+      <div class="project-meta">
+        <span class="type-pill type-${p.type.toLowerCase()}">${p.type}</span>
+        <span class="muted small">${fmtRel(p.mtime)}</span>
+      </div>
+      <div class="project-actions">
+        <button class="btn btn-small" data-pact="browser" title="Open in browser">🌐</button>
+        <button class="btn btn-small" data-pact="folder"  title="Open folder">📁</button>
+        <button class="btn btn-small" data-pact="vscode"  title="Open in VS Code">✎</button>
+        <button class="btn btn-small" data-pact="terminal" title="Open terminal here">›_</button>
+        <button class="btn btn-small btn-primary" data-pact="info" title="Project info">i</button>
+      </div>
+    </div>`;
+}
+
+function applyProjectFilters() {
+  const q       = ($('#projects-search').value || '').toLowerCase().trim();
+  const type    = $('#projects-filter').value;
+  const sort    = $('#projects-sort').value;
+
+  let list = allProjects.slice();
+  if (q)    list = list.filter(p => p.name.toLowerCase().includes(q));
+  if (type) list = list.filter(p => p.type === type);
+
+  if (sort === 'name-asc')   list.sort((a, b) => a.name.localeCompare(b.name));
+  else if (sort === 'name-desc') list.sort((a, b) => b.name.localeCompare(a.name));
+  else if (sort === 'type')      list.sort((a, b) => a.type.localeCompare(b.type) || b.mtime - a.mtime);
+  else                            list.sort((a, b) => b.mtime - a.mtime);
+
+  // Pinned to top
+  list.sort((a, b) => {
+    const af = favorites.includes(a.name) ? 1 : 0;
+    const bf = favorites.includes(b.name) ? 1 : 0;
+    return bf - af;
+  });
+
+  const grid = $('#project-grid');
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="muted center" style="grid-column:1/-1; padding:40px">No projects match.</div>';
+  } else {
+    grid.innerHTML = list.map(buildProjectCard).join('');
+  }
+  $('#projects-count').textContent = `${list.length} of ${allProjects.length}`;
+}
+
+async function loadProjectsPage() {
+  const grid = $('#project-grid');
+  if (!grid) return;
+  grid.innerHTML = '<div class="muted center" style="grid-column:1/-1; padding:40px">Scanning htdocs…</div>';
+  try {
+    const s = await ipcRenderer.invoke('settings-get');
+    $('#projects-root').textContent = s.paths.htdocsPath;
+    favorites    = await ipcRenderer.invoke('project-favorites');
+    allProjects  = await ipcRenderer.invoke('projects-all');
+    applyProjectFilters();
+  } catch (e) {
+    grid.innerHTML = `<div class="error">Scan failed: ${escHtml(e.message)}</div>`;
+  }
+}
+
+['#projects-search', '#projects-filter', '#projects-sort'].forEach(sel => {
+  const el = $(sel);
+  if (el) el.addEventListener('input', applyProjectFilters);
+});
+$('#btn-projects-refresh') && $('#btn-projects-refresh').addEventListener('click', loadProjectsPage);
+
+$('#project-grid') && $('#project-grid').addEventListener('click', async (e) => {
+  const favBtn = e.target.closest('[data-fav]');
+  if (favBtn) {
+    favorites = await ipcRenderer.invoke('project-favorite-toggle', favBtn.dataset.fav);
+    applyProjectFilters();
+    return;
+  }
+  const actBtn = e.target.closest('[data-pact]');
+  if (!actBtn) return;
+  const card = actBtn.closest('.project-card');
+  const name = card.dataset.name;
+  const ppath = card.dataset.path;
+  switch (actBtn.dataset.pact) {
+    case 'browser':  ipcRenderer.invoke('open-url',  `http://localhost/${name}`);    break;
+    case 'folder':   ipcRenderer.invoke('open-path', ppath);                          break;
+    case 'vscode':   ipcRenderer.invoke('vscode-open', ppath);                        break;
+    case 'terminal': ipcRenderer.invoke('terminal-open', ppath);                      break;
+    case 'info':     openProjectInfo(ppath);                                          break;
+  }
+});
+
+// ---------- Project info modal ----------
+async function openProjectInfo(ppath) {
+  const modal = $('#project-modal');
+  if (!modal) return;
+  modal.classList.remove('hidden');
+  $('#modal-body').innerHTML = '<div class="muted center" style="padding:20px">Loading…</div>';
+  try {
+    const i = await ipcRenderer.invoke('project-info', ppath);
+    $('#modal-title').textContent = i.name + (i.type ? `  ·  ${i.type}` : '');
+    $('#modal-path').textContent  = i.path;
+    $('#modal-body').innerHTML    = renderProjectInfo(i);
+  } catch (e) {
+    $('#modal-body').innerHTML = `<div class="error">${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderProjectInfo(i) {
+  const sections = [];
+
+  if (i.composer) {
+    sections.push(`
+      <div class="info-section">
+        <div class="info-section-title">composer.json</div>
+        <div class="kv"><span>Name</span><code>${escHtml(i.composer.name || '—')}</code></div>
+        ${i.composer.description ? `<div class="kv"><span>Description</span><code>${escHtml(i.composer.description)}</code></div>` : ''}
+        ${i.composer.version     ? `<div class="kv"><span>Version</span><code>${escHtml(i.composer.version)}</code></div>` : ''}
+        ${i.composer.type        ? `<div class="kv"><span>Type</span><code>${escHtml(i.composer.type)}</code></div>` : ''}
+        ${i.composer.require && i.composer.require.length
+          ? `<div class="info-tag-row"><span class="muted small">require:</span> ${i.composer.require.map(r => `<span class="tag">${escHtml(r)}</span>`).join('')}</div>`
+          : ''}
+      </div>`);
+  }
+
+  if (i.package) {
+    const scripts = i.package.scripts || {};
+    const scriptKeys = Object.keys(scripts);
+    sections.push(`
+      <div class="info-section">
+        <div class="info-section-title">package.json</div>
+        <div class="kv"><span>Name</span><code>${escHtml(i.package.name || '—')}</code></div>
+        ${i.package.version     ? `<div class="kv"><span>Version</span><code>${escHtml(i.package.version)}</code></div>` : ''}
+        ${i.package.description ? `<div class="kv"><span>Description</span><code>${escHtml(i.package.description)}</code></div>` : ''}
+        ${scriptKeys.length ? `
+          <div class="info-section-title" style="margin-top:12px">npm scripts</div>
+          <div class="info-tag-row">
+            ${scriptKeys.map(k => `<button class="btn btn-small" data-npm-run="${escAttr(k)}" title="${escAttr(scripts[k])}">▶ ${escHtml(k)}</button>`).join('')}
+          </div>` : ''}
+        ${i.package.dependencies && i.package.dependencies.length
+          ? `<div class="info-tag-row"><span class="muted small">deps:</span> ${i.package.dependencies.map(d => `<span class="tag">${escHtml(d)}</span>`).join('')}</div>`
+          : ''}
+      </div>`);
+  }
+
+  if (i.wordpress) {
+    sections.push(`
+      <div class="info-section">
+        <div class="info-section-title">WordPress config</div>
+        <div class="kv"><span>DB name</span><code>${escHtml(i.wordpress.dbName || '—')}</code></div>
+        <div class="kv"><span>DB user</span><code>${escHtml(i.wordpress.dbUser || '—')}</code></div>
+        <div class="kv"><span>DB host</span><code>${escHtml(i.wordpress.dbHost || '—')}</code></div>
+        <div class="kv"><span>Table prefix</span><code>${escHtml(i.wordpress.tablePrefix || '—')}</code></div>
+      </div>`);
+  }
+
+  if (i.env) {
+    sections.push(`
+      <div class="info-section">
+        <div class="info-section-title">.env</div>
+        ${i.env.appName      ? `<div class="kv"><span>APP_NAME</span><code>${escHtml(i.env.appName)}</code></div>` : ''}
+        ${i.env.appUrl       ? `<div class="kv"><span>APP_URL</span><code>${escHtml(i.env.appUrl)}</code></div>` : ''}
+        ${i.env.appEnv       ? `<div class="kv"><span>APP_ENV</span><code>${escHtml(i.env.appEnv)}</code></div>` : ''}
+        ${i.env.dbConnection ? `<div class="kv"><span>DB_CONNECTION</span><code>${escHtml(i.env.dbConnection)}</code></div>` : ''}
+        ${i.env.dbDatabase   ? `<div class="kv"><span>DB_DATABASE</span><code>${escHtml(i.env.dbDatabase)}</code></div>` : ''}
+        ${i.env.dbHost       ? `<div class="kv"><span>DB_HOST</span><code>${escHtml(i.env.dbHost)}</code></div>` : ''}
+      </div>`);
+  }
+
+  if (sections.length === 0) {
+    sections.push('<div class="muted center" style="padding:20px">No metadata files found in this folder.</div>');
+  }
+
+  return sections.join('');
+}
+
+document.querySelectorAll('[data-modal-close]').forEach(el => {
+  el.addEventListener('click', () => $('#project-modal') && $('#project-modal').classList.add('hidden'));
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const m = $('#project-modal');
+    if (m && !m.classList.contains('hidden')) m.classList.add('hidden');
+  }
+});
+
+$('#modal-body') && $('#modal-body').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-npm-run]');
+  if (!btn) return;
+  const path = $('#modal-path').textContent;
+  const script = btn.dataset.npmRun;
+  await ipcRenderer.invoke('npm-run', path, script);
+});
+
+// Auto-load projects when Projects nav item is clicked the first time
+let projectsLoaded = false;
+const navProjects = document.querySelector('.nav-item[data-page="projects"]');
+if (navProjects) {
+  navProjects.addEventListener('click', () => {
+    if (!projectsLoaded) {
+      projectsLoaded = true;
+      loadProjectsPage();
+    }
+  });
+}
+
 refreshStatusFull();
 refreshDashboard();
 refreshRecentProjects();

@@ -428,3 +428,157 @@ body.theme-light .server-pill {
   .dash-grid { grid-template-columns: 1fr; }
   .quick-actions { grid-template-columns: 1fr; }
 }
+
+/* ---------- Projects page ---------- */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+.project-card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.15s, transform 0.05s, box-shadow 0.15s;
+}
+.project-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 16px rgba(32,165,58,0.12);
+}
+.project-card .fav-btn {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, background 0.15s;
+}
+.project-card .fav-btn:hover  { background: var(--panel-2); color: var(--yellow); }
+.project-card .fav-btn.active { color: var(--yellow); }
+.project-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.project-icon.type-laravel   { background: rgba(239,68,68,0.15); color: #f87171; }
+.project-icon.type-wordpress { background: rgba(59,130,246,0.15); color: #60a5fa; }
+.project-icon.type-node      { background: rgba(34,197,94,0.15); color: var(--green); }
+.project-icon.type-composer  { background: rgba(245,158,11,0.15); color: var(--yellow); }
+.project-icon.type-php       { background: rgba(167,139,250,0.15); color: #a78bfa; }
+.project-icon.type-static    { background: rgba(148,163,184,0.15); color: #94a3b8; }
+.project-name {
+  font-size: 15px;
+  font-weight: 600;
+  word-break: break-all;
+  padding-right: 28px;
+}
+.project-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.project-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.project-actions .btn {
+  flex: 1;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+/* ---------- Modal ---------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal.hidden { display: none; }
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+}
+.modal-panel {
+  position: relative;
+  width: min(720px, 92vw);
+  max-height: 86vh;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal-head {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+.modal-body {
+  padding: 18px 22px;
+  overflow-y: auto;
+  flex: 1;
+}
+.info-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.info-section:last-child { border-bottom: none; }
+.info-section-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.info-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+.tag {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}

@@ -22,6 +22,7 @@
       </div>
       <nav>
         <button class="nav-item active" data-page="home"><span class="nav-ico">⌂</span> Home</button>
+        <button class="nav-item"        data-page="projects"><span class="nav-ico">⊞</span> Projects</button>
         <button class="nav-item"        data-page="services"><span class="nav-ico">⚙</span> Services</button>
         <button class="nav-item"        data-page="databases"><span class="nav-ico">▦</span> Databases</button>
         <button class="nav-item"        data-page="query"><span class="nav-ico">›_</span> SQL Query</button>
@@ -147,6 +148,55 @@
           </div>
         </div>
       </section>
+
+      <!-- PROJECTS -->
+      <section class="page" id="page-projects">
+        <header class="page-head">
+          <h1>Projects</h1>
+          <p class="muted">All folders in <code id="projects-root">…</code></p>
+        </header>
+
+        <div class="toolbar">
+          <input class="input grow" id="projects-search" placeholder="Search by name…" />
+          <select class="input" id="projects-filter">
+            <option value="">All types</option>
+            <option value="Laravel">Laravel</option>
+            <option value="WordPress">WordPress</option>
+            <option value="Node">Node</option>
+            <option value="Composer">Composer</option>
+            <option value="PHP">PHP</option>
+            <option value="Static">Static</option>
+            <option value="Folder">Folder</option>
+          </select>
+          <select class="input" id="projects-sort">
+            <option value="recent">Recent</option>
+            <option value="name-asc">Name A → Z</option>
+            <option value="name-desc">Name Z → A</option>
+            <option value="type">Type</option>
+          </select>
+          <button class="btn" id="btn-projects-refresh">Refresh</button>
+          <span class="muted" id="projects-count"></span>
+        </div>
+
+        <div class="project-grid" id="project-grid">
+          <div class="muted center" style="grid-column:1/-1; padding:40px">Scanning htdocs…</div>
+        </div>
+      </section>
+
+      <!-- PROJECT DETAILS MODAL -->
+      <div class="modal hidden" id="project-modal">
+        <div class="modal-backdrop" data-modal-close></div>
+        <div class="modal-panel">
+          <div class="modal-head">
+            <div>
+              <div class="modal-title" id="modal-title">—</div>
+              <div class="muted small" id="modal-path">—</div>
+            </div>
+            <button class="btn btn-ghost" data-modal-close>✕</button>
+          </div>
+          <div class="modal-body" id="modal-body">…</div>
+        </div>
+      </div>
 
       <!-- SERVICES -->
       <section class="page" id="page-services">

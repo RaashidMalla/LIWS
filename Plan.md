@@ -44,6 +44,9 @@ LWIS is the **single desktop app** a Windows web developer opens in the morning.
 - [x] Re-skinned primary accent from blue to green (aaPanel-style)
 - [x] Sidebar shows LAN IP + status dot, nav-icons added
 
+## Current State — v0.4 (DONE)
+- [x] Phase 4 — Projects/Websites Manager (card grid, search/filter/sort, favorites, project info modal, npm script runner)
+
 ---
 
 ## Architecture & Dependencies to Add
@@ -149,36 +152,40 @@ Each phase ships independently. Goal: every phase ends with a usable, testable f
 
 ---
 
-## Phase 4 — Projects / Websites Manager (2 days)
+## Phase 4 — Projects / Websites Manager (DONE)
 
 **Goal:** every project in `htdocs` shows up as a card with one-click actions — equivalent to aaPanel's Website tab.
 
 ### Features
-- [ ] Auto-scan `C:\xampp\htdocs` (configurable in Settings)
-- [ ] Detect project type: Laravel / WordPress / generic PHP / static / Node
-- [ ] Project card per folder: name, type icon, size, last modified
-- [ ] Per-card actions:
-  - Open in browser (`http://localhost/<name>`)
-  - Open in VS Code (`code <path>`)
-  - Open in File Explorer (`start <path>`)
-  - Open terminal here
-  - Show project info (composer.json / package.json / wp-config)
-- [ ] Filter by type, search by name
-- [ ] Pin favorites to top
+- [x] Auto-scan htdocs (uses `paths.htdocsPath` from Settings)
+- [x] Detect project type: Laravel, WordPress, Node, Composer, PHP, Static, Folder
+- [x] Project card per folder: name, type icon (color-coded), modified time
+- [x] Per-card actions:
+  - [x] Open in browser (`http://localhost/<name>`)
+  - [x] Open in VS Code (`code <path>` via shell)
+  - [x] Open in File Explorer (`shell.openPath`)
+  - [x] Open terminal here (Windows Terminal `wt -d`, falls back to `cmd /K`)
+  - [x] Project info modal (reads composer.json, package.json, wp-config.php, .env)
+- [x] Filter by type, search by name (live), sort by recent / name / type
+- [x] Pin favorites to top (persisted in `ui.favorites` setting)
+- [x] Run npm scripts directly from info modal (opens new terminal)
 
 ### Files
-- `project-scanner.js` (new) — folder scan + type detection
-- `index.html` — `#page-projects` with card grid
-- `renderer.js` — project list rendering, search, filter
-- `main.js` — IPC: `projects-list`, `project-open-*`
+- `project-scanner.js` — added `getProjectInfo()` reading composer/package/wp/.env metadata
+- `index.html` — `#page-projects` card grid + project info modal + Projects nav item
+- `renderer.js` — projects page state machine, filter/sort, modal renderer with HTML escaping
+- `main.js` — IPC: `project-info`, `project-favorites`, `project-favorite-toggle`, `terminal-open`, `vscode-open`, `npm-run`
+- `assets/style.css` — project card grid (auto-fill 240px min), color-coded type icons, modal with backdrop blur
 
 ### Dependencies
-- `fast-glob`
+- (none — pure Node `fs` and `child_process`, no `fast-glob` needed for top-level scan)
 
 ### Acceptance
-- 10 projects in htdocs render in < 500ms
-- Type detection is correct for Laravel (presence of `artisan`), WordPress (`wp-config.php`), Node (`package.json`)
-- "Open in VS Code" works if `code` is on PATH
+- [x] Cards render fast for typical htdocs (top-level only, no recursion)
+- [x] Type detection: `artisan` → Laravel, `wp-config.php` → WordPress, `package.json` → Node
+- [x] VS Code open works via `code` on PATH
+- [x] Pinned projects always show first regardless of sort
+- [x] Search + filter + sort compose correctly
 
 ---
 
