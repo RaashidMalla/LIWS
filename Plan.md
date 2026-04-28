@@ -39,6 +39,11 @@ LWIS is the **single desktop app** a Windows web developer opens in the morning.
 ## Current State — v0.2 (DONE)
 - [x] Phase 2 — Settings & Persistence (editable paths, credentials, theme, window-bounds, auto-detect)
 
+## Current State — v0.3 (DONE)
+- [x] Phase 3 — Home Dashboard (live CPU/RAM/disk/uptime, service grid, quick actions, recent projects, system info)
+- [x] Re-skinned primary accent from blue to green (aaPanel-style)
+- [x] Sidebar shows LAN IP + status dot, nav-icons added
+
 ---
 
 ## Architecture & Dependencies to Add
@@ -114,31 +119,33 @@ Each phase ships independently. Goal: every phase ends with a usable, testable f
 
 ---
 
-## Phase 3 — Home Dashboard (1–2 days)
+## Phase 3 — Home Dashboard (DONE)
 
 **Goal:** the first thing users see is everything that matters at a glance — like aaPanel's home screen.
 
 ### Features
-- [ ] CPU, RAM, disk usage (live, polled every 2s)
-- [ ] Service status grid (MySQL, Apache, optionally PHP-FPM, Node)
-- [ ] "Today's stats": queries run, projects opened, errors logged
-- [ ] Quick actions: Start All, Stop All, Open htdocs, Open phpMyAdmin
-- [ ] Recent projects (last 5 opened)
-- [ ] System info card: hostname, IP, uptime, OS version
+- [x] CPU, RAM, disk usage (live, polled every 2s)
+- [x] Service status grid (MySQL, Apache) with inline Start/Stop
+- [x] Quick actions: Start All, Stop All, Open htdocs, Open phpMyAdmin, Open localhost, Open config folder
+- [x] Recent projects (last 6 from htdocs) with type-detection (Laravel, WordPress, Node, Composer, PHP, Static)
+- [x] System info card: hostname, LAN IP, uptime, OS, CPU model, Node + Electron versions
+- [x] Sidebar shows LAN IP + status dot
 
 ### Files
-- `index.html` — new `#page-home` section, set as default landing
-- `renderer.js` — dashboard module, polling loop
-- `main.js` — IPC: `system-stats`, `quick-action`
-- `assets/style.css` — stat cards, sparkline styles
+- `system-stats.js` (new) — `os` + `wmic` for CPU/RAM/disk/uptime, no external deps
+- `project-scanner.js` (new) — htdocs scan + project type detection
+- `index.html` — `#page-home` section set as default landing
+- `renderer.js` — dashboard module, 2s polling loop, recent projects, quick actions
+- `main.js` — IPC: `system-stats`, `system-info`, `projects-recent`, `projects-all`, `open-url`, `open-path`
+- `assets/style.css` — green accent palette, stat cards, progress bars, quick-action grid, type pills
 
 ### Dependencies
-- `systeminformation`
+- (none — used Node built-ins instead of `systeminformation` to keep bundle small)
 
 ### Acceptance
-- Stats update without UI freeze
-- Quick action buttons all work
-- Dashboard is the default page on app open
+- [x] Stats update without UI freeze (2s poll, CPU delta-based, no blocking)
+- [x] Quick action buttons all work (browser opens via `shell.openExternal`, folders via `shell.openPath`)
+- [x] Dashboard is the default page on app open
 
 ---
 

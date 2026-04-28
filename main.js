@@ -1,9 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const { exec, spawn } = require('child_process');
 const path = require('path');
 const settings = require('./settings');
 const db = require('./db-manager');
 const { createLaravelProject } = require('./laravel');
+const stats = require('./system-stats');
+const { scanProjects, recentProjects } = require('./project-scanner');
 
 let mainWindow = null;
 let mysqlProc  = null;
@@ -135,6 +137,15 @@ ipcMain.handle('settings-get',    ()         => settings.load());
 ipcMain.handle('settings-save',   (_e, obj)  => settings.setAll(obj));
 ipcMain.handle('settings-reset',  ()         => settings.reset());
 ipcMain.handle('settings-path',   ()         => settings.configFilePath());
+
+ipcMain.handle('system-stats',    ()         => stats.getAllStats());
+ipcMain.handle('system-info',     ()         => stats.getSystemInfo());
+
+ipcMain.handle('projects-recent', (_e, n)    => recentProjects(settings.get('paths.htdocsPath'), n || 5));
+ipcMain.handle('projects-all',    ()         => scanProjects(settings.get('paths.htdocsPath')));
+
+ipcMain.handle('open-url',  (_e, url) => shell.openExternal(url));
+ipcMain.handle('open-path', (_e, p)   => shell.openPath(p));
 
 ipcMain.handle('db-connect',         ()                  => db.connectDB());
 ipcMain.handle('db-list',            ()                  => db.listDatabases());

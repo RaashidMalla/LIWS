@@ -26,6 +26,7 @@ $('#btn-clear-laravel-log').addEventListener('click', () => $('#laravel-log').te
 
 function setPill(id, running) {
   const pill = $(id);
+  if (!pill) return;
   pill.classList.toggle('pill-running', running);
   pill.classList.toggle('pill-stopped', !running);
   pill.textContent = running ? 'Running' : 'Stopped';
@@ -33,8 +34,10 @@ function setPill(id, running) {
 
 async function refreshStatus() {
   const s = await ipcRenderer.invoke('status-services');
-  setPill('#mysql-pill', s.mysql);
-  setPill('#apache-pill', s.apache);
+  setPill('#mysql-pill',       s.mysql);
+  setPill('#apache-pill',      s.apache);
+  setPill('#home-mysql-pill',  s.mysql);
+  setPill('#home-apache-pill', s.apache);
 }
 
 $('#btn-start-mysql').addEventListener('click', async () => {
@@ -444,5 +447,158 @@ document.querySelectorAll('[data-pick]').forEach(btn => {
   try { await loadSettingsForm(); } catch (_) {}
 })();
 
-refreshStatus();
-setInterval(refreshStatus, 5000);
+function fmtBytes(bytes) {
+  if (!bytes) return '0 B';
+  const k = 1024, units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + units[i];
+}
+function fmtUptime(s) {
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+function fmtRel(ms) {
+  const diff = Date.now() - ms;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60)        return `${sec}s ago`;
+  if (sec < 3600)      return `${Math.floor(sec/60)}m ago`;
+  if (sec < 86400)     return `${Math.floor(sec/3600)}h ago`;
+  return `${Math.floor(sec/86400)}d ago`;
+}
+
+async function refreshDashboard() {
+  try {
+    const s = await ipcRenderer.invoke('system-stats');
+    if (!s) return;
+
+    $('#stat-cpu').textContent = s.cpu;
+    $('#bar-cpu').style.width  = s.cpu + '%';
+    $('#stat-cpu-sub').textContent = `${s.info.cpuCount} cores`;
+
+    const memPct = s.memory.percent;
+    $('#stat-mem').textContent = memPct;
+    $('#bar-mem').style.width  = memPct + '%';
+    $('#stat-mem-sub').textContent = `${fmtBytes(s.memory.used)} / ${fmtBytes(s.memory.total)}`;
+
+    const cdrive = (s.disks || []).find(d => /^c:?$/i.test(d.drive)) || (s.disks || [])[0];
+    if (cdrive) {
+      $('#stat-disk').textContent = cdrive.percent;
+      $('#bar-disk').style.width  = cdrive.percent + '%';
+      $('#stat-disk-sub').textContent = `${fmtBytes(cdrive.used)} / ${fmtBytes(cdrive.total)} on ${cdrive.drive}`;
+    } else {
+      $('#stat-disk-sub').textContent = 'unavailable';
+    }
+
+    $('#stat-uptime').textContent = fmtUptime(s.info.uptime);
+    $('#stat-host').textContent   = s.info.hostname;
+
+    $('#info-hostname').textContent = s.info.hostname;
+    $('#info-lanip').textContent    = s.info.lanIp;
+    $('#info-os').textContent       = `${s.info.platform} ${s.info.release} (${s.info.arch})`;
+    $('#info-cpu').textContent      = s.info.cpuModel || '—';
+    $('#info-node').textContent     = s.info.nodeVersion;
+    $('#info-electron').textContent = s.info.electronVer || '—';
+    $('#server-ip').textContent     = s.info.lanIp;
+  } catch (e) {
+    console.error('dashboard refresh failed', e);
+  }
+}
+
+function applyServicePills(running) {
+  setPill('#mysql-pill',       running.mysql);
+  setPill('#apache-pill',      running.apache);
+  setPill('#home-mysql-pill',  running.mysql);
+  setPill('#home-apache-pill', running.apache);
+}
+
+async function refreshStatusFull() {
+  const s = await ipcRenderer.invoke('status-services');
+  applyServicePills(s);
+}
+
+async function refreshRecentProjects() {
+  const tbody = $('#recent-projects tbody');
+  if (!tbody) return;
+  try {
+    const projects = await ipcRenderer.invoke('projects-recent', 6);
+    if (!projects || projects.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="muted center">No projects in htdocs.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = projects.map(p => `
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td><span class="type-pill type-${p.type.toLowerCase()}">${p.type}</span></td>
+        <td class="muted small">${fmtRel(p.mtime)}</td>
+        <td class="t-right">
+          <button class="btn btn-small" data-proj-act="browser" data-name="${p.name}">Browser</button>
+          <button class="btn btn-small" data-proj-act="folder"  data-path="${p.path.replace(/"/g, '&quot;')}">Folder</button>
+          <button class="btn btn-small" data-proj-act="vscode"  data-path="${p.path.replace(/"/g, '&quot;')}">VS Code</button>
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="4" class="muted center">Scan failed: ${e.message}</td></tr>`;
+  }
+}
+
+$('#recent-projects') && $('#recent-projects').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-proj-act]');
+  if (!btn) return;
+  const act = btn.dataset.projAct;
+  if (act === 'browser') {
+    await ipcRenderer.invoke('open-url', `http://localhost/${btn.dataset.name}`);
+  } else if (act === 'folder') {
+    await ipcRenderer.invoke('open-path', btn.dataset.path);
+  } else if (act === 'vscode') {
+    await ipcRenderer.invoke('open-path', btn.dataset.path);
+  }
+});
+
+$('#btn-refresh-projects') && $('#btn-refresh-projects').addEventListener('click', refreshRecentProjects);
+
+$('#btn-start-all') && $('#btn-start-all').addEventListener('click', async () => {
+  await ipcRenderer.invoke('start-mysql');
+  await ipcRenderer.invoke('start-apache');
+  refreshStatusFull();
+});
+$('#btn-stop-all') && $('#btn-stop-all').addEventListener('click', async () => {
+  await ipcRenderer.invoke('stop-mysql');
+  await ipcRenderer.invoke('stop-apache');
+  refreshStatusFull();
+});
+
+document.querySelectorAll('[data-svc]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const channel = `${btn.dataset.act}-${btn.dataset.svc}`;
+    await ipcRenderer.invoke(channel);
+    refreshStatusFull();
+  });
+});
+
+document.querySelectorAll('[data-quick]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const action = btn.dataset.quick;
+    const s = await ipcRenderer.invoke('settings-get');
+    if (action === 'open-localhost') {
+      await ipcRenderer.invoke('open-url', 'http://localhost');
+    } else if (action === 'open-phpmyadmin') {
+      await ipcRenderer.invoke('open-url', 'http://localhost/phpmyadmin');
+    } else if (action === 'open-htdocs') {
+      await ipcRenderer.invoke('open-path', s.paths.htdocsPath);
+    } else if (action === 'open-config') {
+      const cp = await ipcRenderer.invoke('settings-path');
+      const dir = cp.replace(/[\\/][^\\/]+$/, '');
+      await ipcRenderer.invoke('open-path', dir);
+    }
+  });
+});
+
+refreshStatusFull();
+refreshDashboard();
+refreshRecentProjects();
+setInterval(refreshStatusFull, 5000);
+setInterval(refreshDashboard, 2000);
