@@ -6,6 +6,8 @@ const db = require('./db-manager');
 const { createLaravelProject } = require('./laravel');
 const stats = require('./system-stats');
 const { scanProjects, recentProjects, getProjectInfo } = require('./project-scanner');
+const hosts  = require('./hosts-manager');
+const vhosts = require('./vhost-manager');
 
 let mainWindow = null;
 let mysqlProc  = null;
@@ -177,6 +179,50 @@ ipcMain.handle('npm-run', (_e, cwd, script) => new Promise(resolve => {
   proc.on('error', err => resolve({ success: false, msg: err.message }));
   proc.on('spawn', () => { proc.unref(); resolve({ success: true }); });
 }));
+
+ipcMain.handle('hosts-read',     ()                       => hosts.readHosts());
+ipcMain.handle('hosts-add',      (_e, ip, host, comment)  => hosts.addEntry(ip, host, comment));
+ipcMain.handle('hosts-remove',   (_e, host)               => hosts.removeEntry(host));
+ipcMain.handle('hosts-set',      (_e, entries)            => hosts.setEntries(entries));
+
+ipcMain.handle('vhosts-read',           ()                          => vhosts.readVhosts());
+ipcMain.handle('vhosts-include-status', ()                          => vhosts.isVhostsIncludeEnabled());
+ipcMain.handle('vhosts-include-enable', ()                          => vhosts.ensureVhostsEnabled());
+ipcMain.handle('vhosts-add',            (_e, domain, root, port)    => vhosts.addVhost(domain, root, port || 80));
+ipcMain.handle('vhosts-remove',         (_e, domain)                => vhosts.removeVhost(domain));
+
+function restartApache() {
+  return new Promise(resolve => {
+    exec('taskkill /F /IM httpd.exe', () => {
+      apacheProc = null;
+      const p = settings.get('paths');
+      try {
+        apacheProc = spawn(p.apachePath, ['-f', p.apacheConf], { windowsHide: true });
+        apacheProc.stdout.on('data', d => sendLog(`[apache] ${d.toString().trim()}`));
+        apacheProc.stderr.on('data', d => sendLog(`[apache] ${d.toString().trim()}`));
+        apacheProc.on('exit', () => { apacheProc = null; });
+        setTimeout(() => resolve({ success: true }), 1500);
+      } catch (e) {
+        resolve({ success: false, msg: e.message });
+      }
+    });
+  });
+}
+
+ipcMain.handle('apache-restart', () => restartApache());
+
+ipcMain.handle('domain-wizard', async (_e, projectPath, domain) => {
+  if (!projectPath || !domain) return { success: false, msg: 'projectPath and domain required' };
+  const inc = vhosts.ensureVhostsEnabled();
+  if (!inc.success) return { success: false, msg: `vhosts include: ${inc.msg}` };
+  const v = vhosts.addVhost(domain, projectPath, 80);
+  if (!v.success) return { success: false, msg: `vhost: ${v.msg}` };
+  const h = await hosts.addEntry('127.0.0.1', domain, 'LWIS quick setup');
+  if (!h.success) return { success: false, msg: `hosts: ${h.msg}`, partial: 'vhost-added' };
+  const r = await restartApache();
+  if (!r.success) return { success: false, msg: `apache restart: ${r.msg}`, partial: 'all-written' };
+  return { success: true, url: `http://${domain}` };
+});
 
 ipcMain.handle('db-connect',         ()                  => db.connectDB());
 ipcMain.handle('db-list',            ()                  => db.listDatabases());

@@ -429,6 +429,12 @@ body.theme-light .server-pill {
   .quick-actions { grid-template-columns: 1fr; }
 }
 
+#vhost-include-warn-card {
+  border-color: rgba(245,158,11,0.5);
+  background: rgba(245,158,11,0.08);
+}
+#vhost-include-warn-card .card-title { color: var(--yellow); }
+
 /* ---------- Projects page ---------- */
 .project-grid {
   display: grid;

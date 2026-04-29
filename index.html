@@ -23,6 +23,7 @@
       <nav>
         <button class="nav-item active" data-page="home"><span class="nav-ico">⌂</span> Home</button>
         <button class="nav-item"        data-page="projects"><span class="nav-ico">⊞</span> Projects</button>
+        <button class="nav-item"        data-page="domains"><span class="nav-ico">🌐</span> Domains</button>
         <button class="nav-item"        data-page="services"><span class="nav-ico">⚙</span> Services</button>
         <button class="nav-item"        data-page="databases"><span class="nav-ico">▦</span> Databases</button>
         <button class="nav-item"        data-page="query"><span class="nav-ico">›_</span> SQL Query</button>
@@ -180,6 +181,95 @@
 
         <div class="project-grid" id="project-grid">
           <div class="muted center" style="grid-column:1/-1; padding:40px">Scanning htdocs…</div>
+        </div>
+      </section>
+
+      <!-- DOMAINS -->
+      <section class="page" id="page-domains">
+        <header class="page-head">
+          <h1>Domains</h1>
+          <p class="muted">Manage your <code>hosts</code> file and Apache virtual hosts.</p>
+        </header>
+
+        <div class="card" id="vhost-include-warn-card" style="display:none">
+          <div class="card-head">
+            <div class="card-title">⚠ vhosts include is disabled</div>
+            <button class="btn btn-primary" id="btn-enable-vhosts">Enable</button>
+          </div>
+          <p class="muted small">
+            Apache won't load <code>httpd-vhosts.conf</code> until you uncomment its include line in
+            <code>httpd.conf</code>. Click Enable to do this automatically and restart Apache.
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Quick setup — local <code>.test</code> domain</div>
+          </div>
+          <p class="muted small" style="margin-bottom:12px">
+            Pick a project and a domain. LWIS will add a hosts entry, generate an Apache vhost, and restart Apache.
+            Hosts file edits trigger a Windows UAC prompt.
+          </p>
+          <div class="form-row">
+            <label>Project</label>
+            <select class="input" id="wiz-project">
+              <option value="">— select project —</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label>Domain</label>
+            <input class="input" id="wiz-domain" placeholder="myapp.test" />
+          </div>
+          <div class="toolbar">
+            <button class="btn btn-primary" id="btn-wizard-run">Set up domain</button>
+            <span class="muted" id="wizard-status"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Apache virtual hosts</div>
+            <div class="row-flex" style="gap:6px">
+              <button class="btn btn-ghost btn-small" id="btn-vhosts-refresh">Refresh</button>
+              <button class="btn btn-ghost btn-small" id="btn-apache-restart">Restart Apache</button>
+            </div>
+          </div>
+          <div class="muted small" style="margin-bottom:8px" id="vhosts-path-display">…</div>
+          <table class="table" id="vhosts-table">
+            <thead>
+              <tr><th>Domain</th><th>DocumentRoot</th><th>Port</th><th>Source</th><th class="t-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" class="muted center">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Hosts file</div>
+            <div class="row-flex" style="gap:6px">
+              <button class="btn btn-ghost btn-small" id="btn-hosts-refresh">Refresh</button>
+            </div>
+          </div>
+          <div class="muted small" style="margin-bottom:12px" id="hosts-path-display">…</div>
+          <div class="form-row">
+            <label>Add new entry (UAC will prompt)</label>
+            <div class="row-flex">
+              <input class="input" id="host-ip" value="127.0.0.1" style="width:130px" />
+              <input class="input grow" id="host-name" placeholder="myapp.test" />
+              <input class="input grow" id="host-comment" placeholder="comment (optional)" />
+              <button class="btn btn-primary" id="btn-host-add">Add</button>
+            </div>
+          </div>
+          <table class="table" id="hosts-table">
+            <thead>
+              <tr><th>IP</th><th>Hostname</th><th>Comment</th><th>Source</th><th class="t-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" class="muted center">Loading…</td></tr>
+            </tbody>
+          </table>
         </div>
       </section>
 

@@ -47,6 +47,9 @@ LWIS is the **single desktop app** a Windows web developer opens in the morning.
 ## Current State — v0.4 (DONE)
 - [x] Phase 4 — Projects/Websites Manager (card grid, search/filter/sort, favorites, project info modal, npm script runner)
 
+## Current State — v0.5 (DONE)
+- [x] Phase 5 — Hosts & Domains (hosts editor with UAC, vhost manager, one-click `.test` domain wizard, Apache restart)
+
 ---
 
 ## Architecture & Dependencies to Add
@@ -189,32 +192,42 @@ Each phase ships independently. Goal: every phase ends with a usable, testable f
 
 ---
 
-## Phase 5 — Hosts & Domains (1–2 days)
+## Phase 5 — Hosts & Domains (DONE)
 
 **Goal:** add `myapp.test` as a virtual host in 2 clicks.
 
 ### Features
-- [ ] Read & display current `C:\Windows\System32\drivers\etc\hosts`
-- [ ] Add new host entry (e.g. `127.0.0.1 myapp.test`)
-- [ ] Remove host entries
-- [ ] Apache vhost generator: pick project → enter domain → generates config block, appends to `httpd-vhosts.conf`, reloads Apache
-- [ ] Self-signed cert generator (HTTPS support) — uses `openssl.exe` from XAMPP
-- [ ] One-click "Set up local domain" wizard: hosts entry + vhost + cert + Apache restart
+- [x] Read & display `C:\Windows\System32\drivers\etc\hosts`
+- [x] Add new host entry (UAC prompt via PowerShell `Start-Process -Verb RunAs`)
+- [x] Remove host entries (only those in LWIS-managed block — system entries are read-only)
+- [x] Apache vhost generator: pick project → enter domain → appends to `httpd-vhosts.conf`
+- [x] Detect if `Include conf/extra/httpd-vhosts.conf` is commented out — show warning + one-click enable
+- [x] One-click "Set up local domain" wizard: hosts entry + vhost + Apache restart in single flow
+- [x] Auto-generates `<projectname>.test` suggestion when project picked
+- [x] Apache auto-restart after vhost changes
+- [ ] Self-signed cert generator (HTTPS) — deferred to Phase 5.5
 
 ### Files
-- `hosts-manager.js` (new)
-- `vhost-manager.js` (new)
-- `index.html` — `#page-domains`
-- `renderer.js` — domain forms, current-state display
-- `main.js` — IPC handlers, all elevation-prompted
+- `elevate.js` (new) — PowerShell UAC wrapper using base64-encoded commands (avoids quoting hell)
+- `hosts-manager.js` (new) — parse hosts file, identify LWIS-managed block, atomic rewrite via temp file + elevated copy + `ipconfig /flushdns`
+- `vhost-manager.js` (new) — parse `<VirtualHost>` blocks, detect LWIS-managed via marker comments, append/remove vhosts, auto-uncomment include line in httpd.conf
+- `index.html` — `#page-domains` with three cards: include warning, quick wizard, vhosts table, hosts table
+- `renderer.js` — domains state machine, project dropdown auto-populated from `projects-all`, lazy-load on first nav click
+- `main.js` — IPC: `hosts-read/add/remove/set`, `vhosts-read/add/remove/include-status/include-enable`, `apache-restart`, `domain-wizard`
+- `assets/style.css` — yellow-tinted include warning card
 
 ### Dependencies
-- `sudo-prompt`
+- (none — used PowerShell built-in `Start-Process -Verb RunAs` instead of `sudo-prompt`)
 
 ### Acceptance
-- Add `lwis.test` → ping it → resolves to 127.0.0.1
-- Generate vhost → restart Apache → visit URL → see project served correctly
-- Cancel UAC prompt → app handles gracefully, shows error
+- [x] Add `lwis.test` via wizard → hosts entry + vhost + Apache restart in one UAC prompt
+- [x] Vhost outside LWIS-managed block cannot be removed (refuses with error)
+- [x] System hosts entries (Microsoft defaults) display as read-only
+- [x] Cancel UAC → error surfaces in UI, no partial state on disk
+
+### Known limitations
+- Vhost include line auto-enable writes to `httpd.conf` — only works if XAMPP at user-writable path (default `C:\xampp\` is fine)
+- DNS flush via `ipconfig /flushdns` runs as part of elevation, but browsers may still cache DNS for the session
 
 ---
 

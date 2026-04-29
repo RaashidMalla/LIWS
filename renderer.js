@@ -827,6 +827,184 @@ if (navProjects) {
   });
 }
 
+// ---------- Domains page ----------
+function setDomStatus(elSel, msg, kind) {
+  const el = $(elSel);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = kind === 'error' ? 'var(--red)' : (kind === 'ok' ? 'var(--green)' : '');
+}
+
+async function loadHostsTable() {
+  const tbody = document.querySelector('#hosts-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="muted center">Loading…</td></tr>';
+  const r = await ipcRenderer.invoke('hosts-read');
+  if (!r.success) {
+    tbody.innerHTML = `<tr><td colspan="5" class="error">${escHtml(r.msg || 'Failed')}</td></tr>`;
+    return;
+  }
+  $('#hosts-path-display').textContent = `path: ${r.path}`;
+  if (r.entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="muted center">No entries.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = r.entries.map(e => `
+    <tr>
+      <td><code>${escHtml(e.ip)}</code></td>
+      <td>${escHtml(e.hostname)}</td>
+      <td class="muted small">${escHtml(e.comment || '')}</td>
+      <td>${e.lwisManaged ? '<span class="type-pill type-node">LWIS</span>' : '<span class="type-pill">system</span>'}</td>
+      <td class="t-right">
+        ${e.lwisManaged
+          ? `<button class="btn btn-small btn-danger" data-host-remove="${escAttr(e.hostname)}">Remove</button>`
+          : '<span class="muted small">read-only</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+async function loadVhostsTable() {
+  const tbody = document.querySelector('#vhosts-table tbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" class="muted center">Loading…</td></tr>';
+  const inc = await ipcRenderer.invoke('vhosts-include-status');
+  $('#vhost-include-warn-card').style.display = (inc.ok && !inc.enabled) ? '' : 'none';
+
+  const r = await ipcRenderer.invoke('vhosts-read');
+  if (!r.success) {
+    tbody.innerHTML = `<tr><td colspan="5" class="error">${escHtml(r.msg || 'Failed')}</td></tr>`;
+    $('#vhosts-path-display').textContent = r.path ? `path: ${r.path}` : '';
+    return;
+  }
+  $('#vhosts-path-display').textContent = `path: ${r.path}`;
+  if (r.entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="muted center">No virtual hosts defined.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = r.entries.map(e => `
+    <tr>
+      <td><strong>${escHtml(e.domain)}</strong></td>
+      <td class="muted small"><code>${escHtml(e.docRoot)}</code></td>
+      <td>${escHtml(e.port)}</td>
+      <td>${e.lwisManaged ? '<span class="type-pill type-node">LWIS</span>' : '<span class="type-pill">manual</span>'}</td>
+      <td class="t-right">
+        <button class="btn btn-small" data-vhost-open="${escAttr(e.domain)}">Open</button>
+        ${e.lwisManaged
+          ? `<button class="btn btn-small btn-danger" data-vhost-remove="${escAttr(e.domain)}">Remove</button>`
+          : '<span class="muted small">read-only</span>'}
+      </td>
+    </tr>`).join('');
+}
+
+async function populateWizardProjects() {
+  try {
+    const projects = await ipcRenderer.invoke('projects-all');
+    const sel = $('#wiz-project');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— select project —</option>' +
+      projects.map(p => `<option value="${escAttr(p.path)}" data-name="${escAttr(p.name)}">${escHtml(p.name)} (${p.type})</option>`).join('');
+  } catch (_) {}
+}
+
+$('#wiz-project') && $('#wiz-project').addEventListener('change', (e) => {
+  const opt = e.target.selectedOptions[0];
+  if (!opt) return;
+  const name = opt.dataset.name;
+  const dom = $('#wiz-domain');
+  if (name && (!dom.value || /\.test$/i.test(dom.value))) {
+    dom.value = `${name.toLowerCase().replace(/[^a-z0-9-]/g, '-')}.test`;
+  }
+});
+
+$('#btn-wizard-run') && $('#btn-wizard-run').addEventListener('click', async () => {
+  const ppath  = $('#wiz-project').value;
+  const domain = ($('#wiz-domain').value || '').trim();
+  if (!ppath || !domain) {
+    setDomStatus('#wizard-status', 'Pick a project and enter a domain', 'error');
+    return;
+  }
+  setDomStatus('#wizard-status', 'Working… (UAC prompt incoming for hosts edit)');
+  const r = await ipcRenderer.invoke('domain-wizard', ppath, domain);
+  if (r.success) {
+    setDomStatus('#wizard-status', `Done — ${r.url}`, 'ok');
+    loadHostsTable();
+    loadVhostsTable();
+  } else {
+    setDomStatus('#wizard-status', r.msg, 'error');
+  }
+});
+
+$('#btn-host-add') && $('#btn-host-add').addEventListener('click', async () => {
+  const ip      = $('#host-ip').value.trim();
+  const host    = $('#host-name').value.trim();
+  const comment = $('#host-comment').value.trim();
+  if (!host) return;
+  const r = await ipcRenderer.invoke('hosts-add', ip || '127.0.0.1', host, comment);
+  if (r.success) {
+    $('#host-name').value = '';
+    $('#host-comment').value = '';
+    loadHostsTable();
+  } else {
+    alert('Add failed: ' + r.msg);
+  }
+});
+
+$('#hosts-table') && $('#hosts-table').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-host-remove]');
+  if (!btn) return;
+  const host = btn.dataset.hostRemove;
+  if (!confirm(`Remove ${host} from hosts? (UAC will prompt)`)) return;
+  const r = await ipcRenderer.invoke('hosts-remove', host);
+  if (r.success) loadHostsTable();
+  else alert('Remove failed: ' + r.msg);
+});
+
+$('#btn-hosts-refresh') && $('#btn-hosts-refresh').addEventListener('click', loadHostsTable);
+$('#btn-vhosts-refresh') && $('#btn-vhosts-refresh').addEventListener('click', loadVhostsTable);
+
+$('#btn-apache-restart') && $('#btn-apache-restart').addEventListener('click', async () => {
+  const r = await ipcRenderer.invoke('apache-restart');
+  refreshStatusFull();
+  if (!r.success) alert('Apache restart failed: ' + r.msg);
+});
+
+$('#btn-enable-vhosts') && $('#btn-enable-vhosts').addEventListener('click', async () => {
+  const r = await ipcRenderer.invoke('vhosts-include-enable');
+  if (!r.success) return alert('Enable failed: ' + r.msg);
+  await ipcRenderer.invoke('apache-restart');
+  loadVhostsTable();
+});
+
+$('#vhosts-table') && $('#vhosts-table').addEventListener('click', async (e) => {
+  const open = e.target.closest('[data-vhost-open]');
+  if (open) {
+    ipcRenderer.invoke('open-url', `http://${open.dataset.vhostOpen}`);
+    return;
+  }
+  const rem = e.target.closest('[data-vhost-remove]');
+  if (rem) {
+    const domain = rem.dataset.vhostRemove;
+    if (!confirm(`Remove vhost for ${domain}?`)) return;
+    const r = await ipcRenderer.invoke('vhosts-remove', domain);
+    if (!r.success) return alert('Remove failed: ' + r.msg);
+    await ipcRenderer.invoke('apache-restart');
+    loadVhostsTable();
+  }
+});
+
+let domainsLoaded = false;
+const navDomains = document.querySelector('.nav-item[data-page="domains"]');
+if (navDomains) {
+  navDomains.addEventListener('click', () => {
+    if (!domainsLoaded) {
+      domainsLoaded = true;
+      loadHostsTable();
+      loadVhostsTable();
+      populateWizardProjects();
+    }
+  });
+}
+
 refreshStatusFull();
 refreshDashboard();
 refreshRecentProjects();
