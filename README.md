@@ -1,9 +1,5 @@
 # LWIS — Local Web Server
 
-<p align="center">
-  <img src="assets/icon.png" alt="LWIS Logo" width="180" />
-</p>
-
 A custom desktop development environment for **XAMPP** built with Electron + Node.js + MySQL.
 Like XAMPP Control Panel — but with a modern dark UI, a built-in database browser, a SQL query
 runner, a Laravel project creator, and **safe MySQL shutdown that prevents InnoDB corruption**
