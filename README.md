@@ -1,4 +1,4 @@
-# LWIS — Local Web Server
+# LWIS Local Web Server
 
 A custom desktop development environment for **XAMPP** built with Electron + Node.js + MySQL.
 Like XAMPP Control Panel — but with a modern dark UI, a built-in database browser, a SQL query
@@ -9,7 +9,7 @@ When your laptop force-closes or loses power.
 
 ## Why LWIS?
 
-XAMPP is great until the day you slam your laptop shut and MySQL refuses to start. The InnoDB
+XAMPP is great until the day you slam your laptop shut, and MySQL refuses to start. The InnoDB
 log files get corrupted because XAMPP kills MySQL with `taskkill /F` instead of asking it to
 shut down cleanly. The "fix" is usually deleting `ib_logfile0` / `ib_logfile1` (risky) or
 reinstalling XAMPP (annoying).
