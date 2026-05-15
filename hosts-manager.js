@@ -86,7 +86,7 @@ async function addEntry(ip, hostname, comment) {
   if (!r.success) return r;
   const lwis = r.entries.filter(e => e.lwisManaged);
   if (lwis.some(e => e.hostname.toLowerCase() === hostname.toLowerCase())) {
-    return { success: false, msg: `Entry for ${hostname} already exists in LWIS-managed block` };
+    return { success: false, msg: `Entry for ${hostname} already exists in this LWIS-managed block` };
   }
   if (r.entries.some(e => !e.lwisManaged && e.hostname.toLowerCase() === hostname.toLowerCase())) {
     return { success: false, msg: `Entry for ${hostname} exists outside the LWIS block — refusing to add a duplicate` };
